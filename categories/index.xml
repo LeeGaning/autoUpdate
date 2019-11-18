@@ -1,22 +1,22 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Categories on Ganing&#39;s 部落格</title>
-    <link>/categories/</link>
+    <link>https://leeganing.github.io/categories/</link>
     <description>Recent content in Categories on Ganing&#39;s 部落格</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
     <lastBuildDate>Sun, 14 Jun 2015 12:39:04 +0000</lastBuildDate>
     
-	<atom:link href="/categories/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://leeganing.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>生活</title>
-      <link>/categories/%E7%94%9F%E6%B4%BB/</link>
+      <link>https://leeganing.github.io/categories/%E7%94%9F%E6%B4%BB/</link>
       <pubDate>Sun, 14 Jun 2015 12:39:04 +0000</pubDate>
       
-      <guid>/categories/%E7%94%9F%E6%B4%BB/</guid>
+      <guid>https://leeganing.github.io/categories/%E7%94%9F%E6%B4%BB/</guid>
       <description></description>
     </item>
     
