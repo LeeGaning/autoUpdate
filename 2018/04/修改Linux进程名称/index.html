@@ -99,7 +99,7 @@
 
 <p>父子进程管理，nginx一直做的很棒，它家的进程名字都自带小尾巴。代码中有名为set_proctitle函数用来修改进程名。一搜果然出来一些分析博文，linux的ps命令实际是以argv[0]处的值来作为进程的title的，因此只需要修改argv[0]处的值即可。原理如下图，一图胜千言。</p>
 
-<p><img src="./setproctitle/argv-environ.png" alt="" /></p>
+<p><img src="/uploads/setproctitle/argv-environ.png" alt="" /></p>
 
 <pre><code class="language-c">#include &lt;stdarg.h&gt;
 #include &lt;sys/prctl.h&gt;
