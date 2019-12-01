@@ -1,4 +1,4 @@
 # robots.txt 
 User-agent: *
 Disallow: 
-Sitemap: http://www.flysnow.org/sitemap.xml
+Sitemap: //sitemap.xml
