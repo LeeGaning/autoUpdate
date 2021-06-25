@@ -1,0 +1,10 @@
+{
+  "bms_tool": {
+    "name": "bms_tool",
+    "type": 1,
+    "verison": "1.0.0.5",
+    "url": "aHR0cDovL2N1YmUubmNzODguY29tL3dlYmZvbGRlci9leHQvaFBnUk9CNjNDOXclNDA",
+    "date": "2020.04.02",
+    "desc": "\n1.增加IO解锁功能。\n2.界面优化调整。\n请前往云盒子更新！"
+  }
+}
