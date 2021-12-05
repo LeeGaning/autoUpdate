@@ -1,10 +1,48 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Ganing&#39;s 部落格</title><link>https://leeganing.github.io/post/</link><description>Recent content in Posts on Ganing&#39;s 部落格</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><lastBuildDate>Thu, 26 Apr 2018 23:13:58 +0000</lastBuildDate><atom:link href="https://leeganing.github.io/post/index.xml" rel="self" type="application/rss+xml"/><item><title>修改Linux进程名称</title><link>https://leeganing.github.io/2018/04/%E4%BF%AE%E6%94%B9Linux%E8%BF%9B%E7%A8%8B%E5%90%8D%E7%A7%B0/</link><pubDate>Thu, 26 Apr 2018 23:13:58 +0000</pubDate><guid>https://leeganing.github.io/2018/04/%E4%BF%AE%E6%94%B9Linux%E8%BF%9B%E7%A8%8B%E5%90%8D%E7%A7%B0/</guid><description>先说说需求，原来的业务程序使用单进程多线程结构，守护使用的shell脚本，工作起来倒是没有什么大的问题。直到某处远程升级后出现小小的配置问题，进程运行就死掉，看门狗没人喂，守护脚本又判断不了出了什么问题，只是傻傻的重启。我只好想象着它一遍遍的重启，然后驱车300KM，到现场1分钟解决问题，白白花费了大半日功夫，一路风吹日晒。为了满足自己宅在办公室就能操控世界的伟大理想，我决定想个办法解决一下。最简单的就是自己fork来监控进程状态啦，为了保存旧的兼容性，脚本只允许一个同名进程，只好牺牲下自己，改个名欢快地跑起来。 网上传的最多的就是：
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Ganing&#39;s 部落格</title>
+    <link>https://leeganing.github.io/post/</link>
+    <description>Recent content in Posts on Ganing&#39;s 部落格</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Thu, 26 Apr 2018 23:13:58 +0000</lastBuildDate><atom:link href="https://leeganing.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>修改Linux进程名称</title>
+      <link>https://leeganing.github.io/2018/04/%E4%BF%AE%E6%94%B9Linux%E8%BF%9B%E7%A8%8B%E5%90%8D%E7%A7%B0/</link>
+      <pubDate>Thu, 26 Apr 2018 23:13:58 +0000</pubDate>
+      
+      <guid>https://leeganing.github.io/2018/04/%E4%BF%AE%E6%94%B9Linux%E8%BF%9B%E7%A8%8B%E5%90%8D%E7%A7%B0/</guid>
+      <description>先说说需求，原来的业务程序使用单进程多线程结构，守护使用的shell脚本，工作起来倒是没有什么大的问题。直到某处远程升级后出现小小的配置问题，进程运行就死掉，看门狗没人喂，守护脚本又判断不了出了什么问题，只是傻傻的重启。我只好想象着它一遍遍的重启，然后驱车300KM，到现场1分钟解决问题，白白花费了大半日功夫，一路风吹日晒。为了满足自己宅在办公室就能操控世界的伟大理想，我决定想个办法解决一下。最简单的就是自己fork来监控进程状态啦，为了保存旧的兼容性，脚本只允许一个同名进程，只好牺牲下自己，改个名欢快地跑起来。
+网上传的最多的就是：
 法一：
 int prctl(PR_SET_NAME, name); 通过这个函数可以将当前进程的名称修改为 name 的内容。高高兴兴的改完，ps一下，名字还是一样的呢&amp;hellip;&amp;hellip;经过一番搜索，/proc/$pid/stat等几个文件里面名字确实变了。某文章看到只有使用 ps -L 才能看到，达不到想要的效果。
 法二：
 父子进程管理，nginx一直做的很棒，它家的进程名字都自带小尾巴。代码中有名为set_proctitle函数用来修改进程名。一搜果然出来一些分析博文，linux的ps命令实际是以argv[0]处的值来作为进程的title的，因此只需要修改argv[0]处的值即可。原理如下图，一图胜千言。
-#include &amp;lt;stdarg.h&amp;gt; #include &amp;lt;sys/prctl.h&amp;gt; #define MAXLINE 2048 extern char **environ; static char **g_main_argv = NULL; /* pointer to argument vector */ static char *g_main_last_argv = NULL; /* end of argv */ //备份原始变量，以免修改argv[0]的时候覆盖了environ变量 void setproctitle_init(int argc, char **argv, char **envp) { int i; //计算环境变量链表长度，重新申请空间，然后把变量字符串也拷贝过去 for(i = 0; envp[i] !</description></item><item><title>Linux多个私钥匹配</title><link>https://leeganing.github.io/2015/06/Linux%E5%A4%9A%E4%B8%AA%E7%A7%81%E9%92%A5%E5%8C%B9%E9%85%8D/</link><pubDate>Mon, 15 Jun 2015 11:23:41 +0000</pubDate><guid>https://leeganing.github.io/2015/06/Linux%E5%A4%9A%E4%B8%AA%E7%A7%81%E9%92%A5%E5%8C%B9%E9%85%8D/</guid><description>添加永久有效的SSH KEY 虽然ssh-add 命令可以添加key，但是只能保存在当前会话中，如果重启会话，要使用这个可以，就需要重新添加了。我不吐槽这个设计，因为可能有人是会用到的。比如如果key添加多了，又不限定匹配对象，会每一个key都试一下，大大的降低效率。 一个简单的方法就是：配置~/.ssh/config，参考默认配置/etc/ssh/ssh_config
-Host github HostName github.com Port 22 User git IdentityFile ~/.ssh/githubKey 如此就能够保存了。要是所有用户都生效就修改/etc/ssh/ssh_config</description></item><item><title>人生若只如初见</title><link>https://leeganing.github.io/2015/06/%E4%BA%BA%E7%94%9F%E8%8B%A5%E5%8F%AA%E5%A6%82%E5%88%9D%E8%A7%81/</link><pubDate>Sun, 14 Jun 2015 12:39:04 +0000</pubDate><guid>https://leeganing.github.io/2015/06/%E4%BA%BA%E7%94%9F%E8%8B%A5%E5%8F%AA%E5%A6%82%E5%88%9D%E8%A7%81/</guid><description>Welcome to [My Blog]()!本博客由[hugo]()强力驱动.
+ #include &amp;lt;stdarg.h&amp;gt;#include &amp;lt;sys/prctl.h&amp;gt;#define MAXLINE 2048 extern char **environ; static char **g_main_argv = NULL; /* pointer to argument vector */ static char *g_main_last_argv = NULL; /* end of argv */ //备份原始变量，以免修改argv[0]的时候覆盖了environ变量 void setproctitle_init(int argc, char **argv, char **envp) { int i; //计算环境变量链表长度，重新申请空间，然后把变量字符串也拷贝过去  for(i = 0; envp[i] !</description>
+    </item>
+    
+    <item>
+      <title>Linux多个私钥匹配</title>
+      <link>https://leeganing.github.io/2015/06/Linux%E5%A4%9A%E4%B8%AA%E7%A7%81%E9%92%A5%E5%8C%B9%E9%85%8D/</link>
+      <pubDate>Mon, 15 Jun 2015 11:23:41 +0000</pubDate>
+      
+      <guid>https://leeganing.github.io/2015/06/Linux%E5%A4%9A%E4%B8%AA%E7%A7%81%E9%92%A5%E5%8C%B9%E9%85%8D/</guid>
+      <description>添加永久有效的SSH KEY 虽然ssh-add 命令可以添加key，但是只能保存在当前会话中，如果重启会话，要使用这个可以，就需要重新添加了。我不吐槽这个设计，因为可能有人是会用到的。比如如果key添加多了，又不限定匹配对象，会每一个key都试一下，大大的降低效率。 一个简单的方法就是：配置~/.ssh/config，参考默认配置/etc/ssh/ssh_config
+Host github HostName github.com Port 22 User git IdentityFile ~/.ssh/githubKey 如此就能够保存了。要是所有用户都生效就修改/etc/ssh/ssh_config</description>
+    </item>
+    
+    <item>
+      <title>人生若只如初见</title>
+      <link>https://leeganing.github.io/2015/06/%E4%BA%BA%E7%94%9F%E8%8B%A5%E5%8F%AA%E5%A6%82%E5%88%9D%E8%A7%81/</link>
+      <pubDate>Sun, 14 Jun 2015 12:39:04 +0000</pubDate>
+      
+      <guid>https://leeganing.github.io/2015/06/%E4%BA%BA%E7%94%9F%E8%8B%A5%E5%8F%AA%E5%A6%82%E5%88%9D%E8%A7%81/</guid>
+      <description>Welcome to My Blog!本博客由hugo强力驱动.
 这个地方要做什么？ 其实老早想建个博客什么的，却因为各种懒没能成行。最主要还是自己喜欢并一直写了纸质的日记，于是感觉没有什么有价值的东西能够放在网上，拖延至今，亦步亦趋的开始了这个地方的建设。
-我并不打算把日记放在网站上，我还没有勇气展示自己的心灵。那么这里要做什么呢？在了解了一些开源的理念之后，觉得深感赞同。&amp;rdquo;Open and Free&amp;rdquo; 我没有细细的思考，版权什么的我也不想掺和。现实之中，我总是羞于与人交往，没有足够的勇气表达自己的心声，害怕没有经过思考的言语伤害到心爱的人。但是即使是这样，我也有一些东西是想要分享给别人的。我喜欢文字，因为可以仔细的斟酌，准确的表达出来。
-暂时我也不知道要做些什么，但是呢？“想要找出答案的话，就不应该光用脑袋想。去做你想做的的事，去往你目标的地方只有一条路吗？”所以去做了之后，说不定就能够找到了。</description></item></channel></rss>
+我并不打算把日记放在网站上，我还没有勇气展示自己的心灵。那么这里要做什么呢？在了解了一些开源的理念之后，觉得深感赞同。&amp;ldquo;Open and Free&amp;rdquo; 我没有细细的思考，版权什么的我也不想掺和。现实之中，我总是羞于与人交往，没有足够的勇气表达自己的心声，害怕没有经过思考的言语伤害到心爱的人。但是即使是这样，我也有一些东西是想要分享给别人的。我喜欢文字，因为可以仔细的斟酌，准确的表达出来。
+暂时我也不知道要做些什么，但是呢？“想要找出答案的话，就不应该光用脑袋想。去做你想做的的事，去往你目标的地方只有一条路吗？”所以去做了之后，说不定就能够找到了。</description>
+    </item>
+    
+  </channel>
+</rss>
