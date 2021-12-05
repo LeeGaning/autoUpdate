@@ -92,59 +92,117 @@
 <!-- raw HTML omitted -->
 <p>网上传的最多的就是：</p>
 <p>法一：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">prctl</span>(PR_SET_NAME, name);
-</code></pre></div><p>通过这个函数可以将当前进程的名称修改为 name 的内容。高高兴兴的改完，ps一下，名字还是一样的呢&hellip;&hellip;经过一番搜索，/proc/$pid/stat等几个文件里面名字确实变了。某文章看到只有使用 ps -L 才能看到，达不到想要的效果。</p>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#458;font-weight:bold">int</span> <span style="color:#900;font-weight:bold">prctl</span>(PR_SET_NAME, name);
+</code></pre></td></tr></table>
+</div>
+</div><p>通过这个函数可以将当前进程的名称修改为 name 的内容。高高兴兴的改完，ps一下，名字还是一样的呢&hellip;&hellip;经过一番搜索，/proc/$pid/stat等几个文件里面名字确实变了。某文章看到只有使用 ps -L 才能看到，达不到想要的效果。</p>
 <p>法二：</p>
 <p>父子进程管理，nginx一直做的很棒，它家的进程名字都自带小尾巴。代码中有名为set_proctitle函数用来修改进程名。一搜果然出来一些分析博文，linux的ps命令实际是以argv[0]处的值来作为进程的title的，因此只需要修改argv[0]处的值即可。原理如下图，一图胜千言。</p>
 <p>
         <img class="mx-auto" alt="" src="/uploads/setproctitle/argv-environ.png" />   
     </p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdarg.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/prctl.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#define MAXLINE 2048
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">extern</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>environ;
-<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>g_main_argv <span style="color:#f92672">=</span> NULL; <span style="color:#75715e">/* pointer to argument vector */</span>
-<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>g_main_last_argv <span style="color:#f92672">=</span> NULL; <span style="color:#75715e">/* end of argv */</span>
-<span style="color:#75715e">//备份原始变量，以免修改argv[0]的时候覆盖了environ变量
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setproctitle_init</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>argv, <span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>envp) {
-    <span style="color:#66d9ef">int</span> i;
-    <span style="color:#75715e">//计算环境变量链表长度，重新申请空间，然后把变量字符串也拷贝过去
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">for</span>(i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; envp[i] <span style="color:#f92672">!=</span> NULL; i<span style="color:#f92672">++</span>)  <span style="color:#75715e">// calc envp num
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">continue</span>;
-    environ <span style="color:#f92672">=</span> (<span style="color:#66d9ef">char</span> <span style="color:#f92672">**</span>) malloc(<span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>) <span style="color:#f92672">*</span> (i <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>));  <span style="color:#75715e">// malloc envp pointer
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">for</span>(i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; envp[i] <span style="color:#f92672">!=</span> NULL; i<span style="color:#f92672">++</span>) {
-        environ[i] <span style="color:#f92672">=</span> (<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span>)malloc(<span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">char</span>) <span style="color:#f92672">*</span> strlen(envp[i]));
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#999;font-weight:bold;font-style:italic">#include</span> <span style="color:#999;font-weight:bold;font-style:italic">&lt;stdarg.h&gt;</span><span style="color:#999;font-weight:bold;font-style:italic">
+</span><span style="color:#999;font-weight:bold;font-style:italic">#include</span> <span style="color:#999;font-weight:bold;font-style:italic">&lt;sys/prctl.h&gt;</span><span style="color:#999;font-weight:bold;font-style:italic">
+</span><span style="color:#999;font-weight:bold;font-style:italic">#define MAXLINE 2048
+</span><span style="color:#999;font-weight:bold;font-style:italic"></span><span style="color:#000;font-weight:bold">extern</span> <span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">**</span>environ;
+<span style="color:#000;font-weight:bold">static</span> <span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">**</span>g_main_argv <span style="color:#000;font-weight:bold">=</span> <span style="color:#0086b3">NULL</span>; <span style="color:#998;font-style:italic">/* pointer to argument vector */</span>
+<span style="color:#000;font-weight:bold">static</span> <span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">*</span>g_main_last_argv <span style="color:#000;font-weight:bold">=</span> <span style="color:#0086b3">NULL</span>; <span style="color:#998;font-style:italic">/* end of argv */</span>
+<span style="color:#998;font-style:italic">//备份原始变量，以免修改argv[0]的时候覆盖了environ变量
+</span><span style="color:#998;font-style:italic"></span><span style="color:#458;font-weight:bold">void</span> <span style="color:#900;font-weight:bold">setproctitle_init</span>(<span style="color:#458;font-weight:bold">int</span> argc, <span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">**</span>argv, <span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">**</span>envp) {
+    <span style="color:#458;font-weight:bold">int</span> i;
+    <span style="color:#998;font-style:italic">//计算环境变量链表长度，重新申请空间，然后把变量字符串也拷贝过去
+</span><span style="color:#998;font-style:italic"></span>    <span style="color:#000;font-weight:bold">for</span>(i <span style="color:#000;font-weight:bold">=</span> <span style="color:#099">0</span>; envp[i] <span style="color:#000;font-weight:bold">!=</span> <span style="color:#0086b3">NULL</span>; i<span style="color:#000;font-weight:bold">++</span>)  <span style="color:#998;font-style:italic">// calc envp num
+</span><span style="color:#998;font-style:italic"></span>        <span style="color:#000;font-weight:bold">continue</span>;
+    environ <span style="color:#000;font-weight:bold">=</span> (<span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">**</span>) malloc(<span style="color:#000;font-weight:bold">sizeof</span>(<span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">*</span>) <span style="color:#000;font-weight:bold">*</span> (i <span style="color:#000;font-weight:bold">+</span> <span style="color:#099">1</span>));  <span style="color:#998;font-style:italic">// malloc envp pointer
+</span><span style="color:#998;font-style:italic"></span>    <span style="color:#000;font-weight:bold">for</span>(i <span style="color:#000;font-weight:bold">=</span> <span style="color:#099">0</span>; envp[i] <span style="color:#000;font-weight:bold">!=</span> <span style="color:#0086b3">NULL</span>; i<span style="color:#000;font-weight:bold">++</span>) {
+        environ[i] <span style="color:#000;font-weight:bold">=</span> (<span style="color:#458;font-weight:bold">char</span><span style="color:#000;font-weight:bold">*</span>)malloc(<span style="color:#000;font-weight:bold">sizeof</span>(<span style="color:#458;font-weight:bold">char</span>) <span style="color:#000;font-weight:bold">*</span> strlen(envp[i]));
         strcpy(environ[i], envp[i]);
     }
-    environ[i] <span style="color:#f92672">=</span> NULL;
-    g_main_argv <span style="color:#f92672">=</span> argv;
-    <span style="color:#66d9ef">if</span>(i <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>)
-        g_main_last_argv <span style="color:#f92672">=</span> envp[i <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> strlen(envp[i <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>]);
-    <span style="color:#66d9ef">else</span>
-        g_main_last_argv <span style="color:#f92672">=</span> argv[argc <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> strlen(argv[argc <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>]);
+    environ[i] <span style="color:#000;font-weight:bold">=</span> <span style="color:#0086b3">NULL</span>;
+    g_main_argv <span style="color:#000;font-weight:bold">=</span> argv;
+    <span style="color:#000;font-weight:bold">if</span>(i <span style="color:#000;font-weight:bold">&gt;</span> <span style="color:#099">0</span>)
+        g_main_last_argv <span style="color:#000;font-weight:bold">=</span> envp[i <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">1</span>] <span style="color:#000;font-weight:bold">+</span> strlen(envp[i <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">1</span>]);
+    <span style="color:#000;font-weight:bold">else</span>
+        g_main_last_argv <span style="color:#000;font-weight:bold">=</span> argv[argc <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">1</span>] <span style="color:#000;font-weight:bold">+</span> strlen(argv[argc <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">1</span>]);
 }
-<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setproctitle</span>(<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>fmt, ...) {
-    <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>p;
-    <span style="color:#66d9ef">int</span> i;
-    <span style="color:#66d9ef">char</span> buf[MAXLINE];
+<span style="color:#458;font-weight:bold">void</span> <span style="color:#900;font-weight:bold">setproctitle</span>(<span style="color:#000;font-weight:bold">const</span> <span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">*</span>fmt, ...) {
+    <span style="color:#458;font-weight:bold">char</span> <span style="color:#000;font-weight:bold">*</span>p;
+    <span style="color:#458;font-weight:bold">int</span> i;
+    <span style="color:#458;font-weight:bold">char</span> buf[MAXLINE];
     va_list ap;
-    p <span style="color:#f92672">=</span> buf;
+    p <span style="color:#000;font-weight:bold">=</span> buf;
     va_start(ap, fmt);
     vsprintf(p, fmt, ap);
     va_end(ap);
-    i <span style="color:#f92672">=</span> strlen(buf);
-    <span style="color:#66d9ef">if</span>(i <span style="color:#f92672">&gt;</span> g_main_last_argv <span style="color:#f92672">-</span> g_main_argv[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>) {
-        i <span style="color:#f92672">=</span> g_main_last_argv <span style="color:#f92672">-</span> g_main_argv[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>;
-        buf[i] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;\0&#39;</span>;
+    i <span style="color:#000;font-weight:bold">=</span> strlen(buf);
+    <span style="color:#000;font-weight:bold">if</span>(i <span style="color:#000;font-weight:bold">&gt;</span> g_main_last_argv <span style="color:#000;font-weight:bold">-</span> g_main_argv[<span style="color:#099">0</span>] <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">2</span>) {
+        i <span style="color:#000;font-weight:bold">=</span> g_main_last_argv <span style="color:#000;font-weight:bold">-</span> g_main_argv[<span style="color:#099">0</span>] <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">2</span>;
+        buf[i] <span style="color:#000;font-weight:bold">=</span> <span style="color:#d14">&#39;\0&#39;</span>;
     }
-    (<span style="color:#66d9ef">void</span>) strcpy(g_main_argv[<span style="color:#ae81ff">0</span>], buf);
-    p <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>g_main_argv[<span style="color:#ae81ff">0</span>][i];
-    <span style="color:#66d9ef">while</span>(p <span style="color:#f92672">&lt;</span> g_main_last_argv)
-        <span style="color:#f92672">*</span>p<span style="color:#f92672">++</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;\0&#39;</span>;
-    g_main_argv[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> NULL;
+    (<span style="color:#458;font-weight:bold">void</span>) strcpy(g_main_argv[<span style="color:#099">0</span>], buf);
+    p <span style="color:#000;font-weight:bold">=</span> <span style="color:#000;font-weight:bold">&amp;</span>g_main_argv[<span style="color:#099">0</span>][i];
+    <span style="color:#000;font-weight:bold">while</span>(p <span style="color:#000;font-weight:bold">&lt;</span> g_main_last_argv)
+        <span style="color:#000;font-weight:bold">*</span>p<span style="color:#000;font-weight:bold">++</span> <span style="color:#000;font-weight:bold">=</span> <span style="color:#d14">&#39;\0&#39;</span>;
+    g_main_argv[<span style="color:#099">1</span>] <span style="color:#000;font-weight:bold">=</span> <span style="color:#0086b3">NULL</span>;
     prctl(PR_SET_NAME, buf);
 }
-</code></pre></div><p>其实如果修改后的名字不比原来长，直接修改argv[0]也是可以的。在redis的源代码中还有一个实现，原理自然一样。翻阅一下，发现bsd库自带这个函数(&ldquo;▔□▔) &ldquo;)</p>
+</code></pre></td></tr></table>
+</div>
+</div><p>其实如果修改后的名字不比原来长，直接修改argv[0]也是可以的。在redis的源代码中还有一个实现，原理自然一样。翻阅一下，发现bsd库自带这个函数(&ldquo;▔□▔) &ldquo;)</p>
 
         </div>
 
@@ -228,6 +286,17 @@
 
 <a id="rocket" href="#top"></a>
 <script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'G-QJJ1HFPG71', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
 
 
 
